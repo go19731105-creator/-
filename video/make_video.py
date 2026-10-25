@@ -1038,6 +1038,53 @@ def chime():
     return np.concatenate(out)
 
 
+def note_freq(n):
+    return 440.0 * 2 ** ((n - 69) / 12)
+
+
+def bgm(total):
+    """ナレーションの後ろで流すやさしいBGM（C - Am - F - G の繰り返し）。左右2ch を返す。"""
+    n = int(total * SR) + SR
+    left, right = np.zeros(n), np.zeros(n)
+    bar = 3.0
+    chords = [(60, 64, 67), (57, 60, 64), (53, 57, 60), (55, 59, 62)]
+    bl = int(bar * SR)
+    tt = np.arange(bl) / SR
+    pad_env = np.minimum(1, tt / 0.8) * np.minimum(1, (bar - tt) / 0.8)
+    step = bar / 8
+    sl = int(step * 2.5 * SR)
+    ts = np.arange(sl) / SR
+    pluck_env = np.exp(-ts * 5.0) * np.minimum(1, ts * 300)
+    i = 0
+    while i * bl < n:
+        ch = chords[i % len(chords)]
+        a = i * bl
+        seg = sum(np.sin(2 * np.pi * note_freq(m) * tt) for m in ch) * pad_env * 0.06
+        seg += np.sin(2 * np.pi * note_freq(ch[0] - 12) * tt) * pad_env * 0.05
+        e = min(n, a + bl)
+        left[a:e] += seg[:e - a]
+        right[a:e] += seg[:e - a]
+        arp = [ch[0] + 12, ch[1] + 12, ch[2] + 12, ch[1] + 12] * 2
+        for j, m in enumerate(arp):
+            b = a + int(j * step * SR)
+            if b >= n:
+                break
+            f = note_freq(m)
+            tone = (np.sin(2 * np.pi * f * ts) + 0.25 * np.sin(4 * np.pi * f * ts)) * pluck_env * 0.045
+            e = min(n, b + sl)
+            pan = 0.35 if j % 2 else -0.35
+            left[b:e] += tone[:e - b] * (1 - pan)
+            right[b:e] += tone[:e - b] * (1 + pan)
+        i += 1
+    fade = np.ones(n)
+    k = int(2.0 * SR)
+    fade[:k] = np.linspace(0, 1, k)
+    end = int(total * SR)
+    fade[end - 3 * k:end] = np.linspace(1, 0, 3 * k)
+    fade[end:] = 0
+    return left * fade, right * fade
+
+
 def build_timeline():
     """全セリフを音声合成し、シーンごとの開始時刻と音声トラックを作る。"""
     LEAD, GAP, TAIL = 1.0, 0.45, 1.0
@@ -1072,11 +1119,18 @@ def build_timeline():
         cur = end
         print(f"  {sc['title'] or 'タイトル'}: {end - start:.1f}秒", flush=True)
     total = cur
-    track = np.zeros(int(total * SR) + SR)
+    voice = np.zeros(int(total * SR) + SR)
     for at, s in audio:
-        track[at:at + len(s)] += s
-    track = np.clip(track, -1, 1)
-    return timeline, total, (track * 32767).astype(np.int16)
+        voice[at:at + len(s)] += s
+    # 話している間はBGMを小さくする（ダッキング）
+    win = int(0.05 * SR)
+    env = np.convolve(np.abs(voice), np.ones(win) / win, mode="same")
+    active = np.convolve((env > 0.02).astype(float), np.ones(int(0.6 * SR)) / int(0.6 * SR), mode="same")
+    duck = 1.0 - 0.6 * np.clip(active * 3, 0, 1)
+    bl, br = bgm(total)
+    stereo = np.stack([voice + bl * duck, voice + br * duck], axis=1)
+    stereo = np.clip(stereo, -1, 1)
+    return timeline, total, (stereo * 32767).astype(np.int16)
 
 
 def main():
@@ -1085,7 +1139,7 @@ def main():
     timeline, total, track = build_timeline()
     wav_path = os.path.splitext(out)[0] + "_audio.wav"
     with wave.open(wav_path, "wb") as w:
-        w.setnchannels(1)
+        w.setnchannels(2)
         w.setsampwidth(2)
         w.setframerate(SR)
         w.writeframes(track.tobytes())
@@ -1093,7 +1147,7 @@ def main():
     print(f"映像を生成中… 全{total:.1f}秒 / {nframes}フレーム")
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
            "-r", str(FPS), "-i", "-", "-i", wav_path, "-c:v", "libx264", "-preset", "medium", "-crf", "22",
-           "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", "-shortest", out]
+           "-pix_fmt", "yuv420p", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "44100", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-shortest", out]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     si = 0
     for fi in range(nframes):

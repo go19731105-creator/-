@@ -3,7 +3,7 @@
 飛行機に乗ったことがない人向けに、空港に着いてから目的地に到着するまでの流れを
 イラスト・字幕・ナレーションで説明する動画です。
 
-- 動画: [`airplane_boarding_guide.mp4`](airplane_boarding_guide.mp4)（1280×720 / 約5分40秒 / 音声付き）
+- 動画: [`airplane_boarding_guide.mp4`](airplane_boarding_guide.mp4)（1280×720 / 約5分40秒 / ナレーション＋BGM・ステレオ音声）
 
 ## 内容
 
@@ -32,4 +32,4 @@ python3 video/make_video.py            # video/airplane_boarding_guide.mp4 を�
 ```
 
 必要なもの: Python 3、ffmpeg、IPAゴシックフォント（`fonts-ipafont-gothic`）。
-ナレーションは Open JTalk（pyopenjtalk）による音声合成です。
+ナレーションは Open JTalk（pyopenjtalk）による音声合成、BGMはスクリプト内で合成しています（話している間は自動で小さくなります）。
