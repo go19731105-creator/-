@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""テニスチャンネルの宣伝動画（テニススクール生徒募集つき）を生成するスクリプト。
+"""福山市のテニスショップ「TENNIS ch.249（テニスチャンネル）」の宣伝動画
+（テニススクール生徒募集つき）を生成するスクリプト。
 
 必要なもの: Python 3, Pillow, numpy, pyopenjtalk, ffmpeg, IPAゴシックフォント
 使い方:    python3 make_tennis_promo.py [出力ファイル名]
@@ -16,9 +17,12 @@ import pyopenjtalk
 from PIL import Image, ImageDraw, ImageFont
 
 # ---------------------------------------------------------------- 設定（ここを書きかえる）
-CHANNEL_NAME = "テニスチャンネル"
-SCHOOL_NAME = "テニススクール"
-CATCH = "テニスがもっと楽しくなる！"
+SHOP_NAME = "TENNIS ch.249"          # 画面に出す店名
+SHOP_KANA = "テニスチャンネル"        # 店名の読み（画面）
+SHOP_READ = "テニスチャンネル"        # 店名の読み（ナレーション）
+CATCH = "福山のテニスショップ"
+ADDRESS = "福山市沖野上町4-18-19 1F"
+TEL = "084-999-0249"
 
 W, H = 1280, 720
 FPS = 24
@@ -47,39 +51,41 @@ HAIR = (70, 50, 40)
 # 各シーン: key=画面の種類, lines=[{t:字幕, r:読み(任意), b:画面に出す短い文(任意)}]
 SCENES = [
     dict(key="open", lines=[
-        dict(t="テニスって楽しそう。でも、ちょっと難しそう…。そう思っていませんか？"),
-        dict(t=f"{CHANNEL_NAME}では、テニスの楽しさを、だれにでもわかるように発信しています。"),
+        dict(t="テニスが好きな人、これからテニスを始めたい人へ。"),
+        dict(t=f"福山市沖野上町にあるテニスショップ、{SHOP_NAME}をご紹介します。",
+             r=f"福山市おきのかみちょうにあるテニスショップ、{SHOP_READ}をご紹介します。"),
     ]),
-    dict(key="content", title="チャンネルで見られること", lines=[
-        dict(t="はじめての人のための、基本の打ち方。", b="はじめての\n基本の打ち方"),
-        dict(t="フォームのコツを、スローでわかりやすく解説。", b="フォームのコツを\nスロー解説"),
-        dict(t="試合で使える、作戦やポイントの取り方。", b="試合で使える作戦"),
-        dict(t="おうちでできる、かんたんトレーニングも紹介しています。", b="おうちで\nトレーニング"),
+    dict(key="shop", title="テニス好きが集まるお店", lines=[
+        dict(t="お店では、大きなテレビでプロの試合を観ることができます。", b="大画面でプロの試合を観戦"),
+        dict(t="コーヒーを飲みながら、テニスの話でのんびり過ごせる、居心地のいいお店です。",
+             b="コーヒー片手にのんびり"),
     ]),
-    dict(key="subscribe", lines=[
-        dict(t="新しい動画を見逃さないように、ぜひチャンネル登録をお願いします！"),
+    dict(key="items", title="ラケット・ガットのことなら", icons=["racket", "string", "talk"], lines=[
+        dict(t="ヨネックスとバボラを中心に、ラケットの新品注文ができます。", b="YONEX・Babolat\nラケットの新品注文"),
+        dict(t="ガットの張り替えも、おまかせください。", b="ガットの\n張り替え"),
+        dict(t="自分に合う道具選びも、気軽に相談してください。", b="道具選びの\nご相談"),
     ]),
     dict(key="recruit", lines=[
         dict(t="そして、ここでお知らせです！"),
-        dict(t=f"{SCHOOL_NAME}で、新しい生徒さんを募集しています！"),
-        dict(t="まずは気軽に、体験レッスンに来てみませんか？"),
+        dict(t="テニススクールの生徒さんを募集しています！"),
+        dict(t="まずは気軽に、見学や体験に来てみませんか？"),
     ]),
     dict(key="easy", title="はじめてでも安心！", lines=[
-        dict(t="テニスがはじめての人も、大歓迎です。", b="未経験・初心者 大歓迎"),
-        dict(t="ラケットは無料で貸し出しているので、持っていなくても大丈夫。", b="ラケット無料レンタル"),
-        dict(t="少人数のクラスで、コーチがひとりひとりに、ていねいに教えます。", b="少人数でていねいに指導"),
-        dict(t="お子さんから大人の方まで、年齢に関係なく楽しめます。", b="キッズから大人まで"),
+        dict(t="テニスがはじめての人も、大歓迎です。", b="はじめての方も大歓迎"),
+        dict(t="お子さんから大人の方まで、楽しくテニスができます。", b="子どもから大人まで"),
+        dict(t="ラケットやガットのことも、お店でそのまま相談できます。", b="道具の相談もお店で"),
     ]),
-    dict(key="flow", title="体験レッスンの流れ", lines=[
-        dict(t="体験レッスンの流れは、とってもかんたん。"),
-        dict(t="まずは、概要欄のリンクから申し込みます。", b="概要欄から申し込み"),
-        dict(t="当日は、動きやすい服と運動靴で来るだけ。", b="動きやすい服と\n運動靴で来るだけ"),
+    dict(key="flow", title="お問い合わせの流れ", lines=[
+        dict(t="お問い合わせは、とってもかんたん。"),
+        dict(t="まずは、LINEでご連絡ください。", r="まずは、ラインでご連絡ください。", b="LINEで連絡"),
+        dict(t="日にちが決まったら、動きやすい服と運動靴で来るだけ。", b="動きやすい服と\n運動靴で"),
         dict(t="コーチと一緒に、ボールを打ってみましょう！", b="コーチと一緒に\n打ってみよう"),
     ]),
     dict(key="cta", lines=[
+        dict(t=f"テニスのことなら、{SHOP_NAME}へ。", r=f"テニスのことなら、{SHOP_READ}へ。"),
+        dict(t="ご来店やスクールのお問い合わせは、事前にLINEでご連絡ください。",
+             r="ご来店やスクールのお問い合わせは、事前にラインでご連絡ください。"),
         dict(t="一緒にテニスを楽しみましょう！"),
-        dict(t="体験レッスンのお申し込みは、概要欄のリンクから。"),
-        dict(t="チャンネル登録も、よろしくお願いします！"),
     ]),
 ]
 
@@ -257,42 +263,10 @@ def check_mark(d, cx, cy, r, color=GREEN):
            width=max(3, int(r * 0.22)), joint="curve")
 
 
-def subscribe_button(d, cx, cy, s, done=False):
-    w, h = 300 * s, 74 * s
-    if done:
-        rr(d, (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2), h / 2, fill=(225, 228, 232))
-        text(d, (cx, cy), "登録済み ✓", int(32 * s), fill=(80, 85, 95), anchor="mm")
-    else:
-        rr(d, (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2), h / 2, fill=RED)
-        text(d, (cx, cy), "チャンネル登録", int(32 * s), fill=WHITE, anchor="mm")
-
-
-def bell(d, cx, cy, s, color=YELLOW, ring=0.0):
-    a = math.sin(ring * 20) * 18 * (1 - clamp(ring))
-    pts = []
-    for ang, rad in ((200, 1.0), (240, 1.05), (270, 1.08), (300, 1.05), (340, 1.0)):
-        pts.append((ang, rad))
-    off = math.radians(a)
-    def rot(px, py):
-        return (cx + px * math.cos(off) - py * math.sin(off), cy - 28 * s + px * math.sin(off) + py * math.cos(off))
-    body = [rot(-30 * s, 46 * s), rot(-24 * s, 10 * s), rot(-16 * s, -6 * s), rot(0, -10 * s),
-            rot(16 * s, -6 * s), rot(24 * s, 10 * s), rot(30 * s, 46 * s)]
-    d.polygon(body, fill=color, outline=NAVY)
-    d.ellipse([cx - 8 * s, cy + 18 * s, cx + 8 * s, cy + 32 * s], fill=color, outline=NAVY)
-
-
-def cursor(d, x, y, s=1.0, press=0.0):
-    k = 1 - 0.15 * press
-    pts = [(0, 0), (0, 40), (11, 30), (19, 47), (27, 43), (19, 27), (33, 27)]
-    pts = [(x + px * s * k, y + py * s * k) for px, py in pts]
-    d.polygon(pts, fill=WHITE, outline=NAVY)
-    d.line(pts + [pts[0]], fill=NAVY, width=3)
-
-
 def channel_badge(d):
-    rr(d, (24, 20, 52 + F(24).getlength(CHANNEL_NAME) + 40, 70), 25, fill=(255, 255, 255, 230))
+    rr(d, (24, 20, 52 + F(24).getlength(SHOP_NAME) + 40, 70), 25, fill=(255, 255, 255, 230))
     ball(d, 50, 45, 15)
-    text(d, (74, 45), CHANNEL_NAME, 24, fill=NAVY, anchor="lm")
+    text(d, (74, 45), SHOP_NAME, 24, fill=NAVY, anchor="lm")
 
 
 def icon(d, kind, cx, cy, s, t=0.0):
@@ -319,8 +293,8 @@ def icon(d, kind, cx, cy, s, t=0.0):
     elif kind == "phone":
         rr(d, (cx - 26 * s, cy - 44 * s, cx + 26 * s, cy + 44 * s), 9 * s, fill=NAVY)
         rr(d, (cx - 21 * s, cy - 36 * s, cx + 21 * s, cy + 34 * s), 4 * s, fill=(235, 245, 255))
-        rr(d, (cx - 16 * s, cy - 2 * s, cx + 16 * s, cy + 14 * s), 5 * s, fill=RED)
-        text(d, (cx, cy + 6 * s), "申込", int(12 * s), fill=WHITE, anchor="mm")
+        rr(d, (cx - 16 * s, cy - 2 * s, cx + 16 * s, cy + 14 * s), 5 * s, fill=(6, 199, 85))
+        text(d, (cx, cy + 6 * s), "LINE", int(11 * s), fill=WHITE, anchor="mm")
         for i in range(3):
             d.line([(cx - 14 * s, cy - 26 * s + i * 7 * s), (cx + 14 * s - i * 6 * s, cy - 26 * s + i * 7 * s)],
                    fill=GRAY, width=max(1, int(3 * s)))
@@ -332,6 +306,34 @@ def icon(d, kind, cx, cy, s, t=0.0):
                    (cx - 32 * s, cy - 14 * s)], fill=tc)
         rr(d, (cx - 30 * s, cy + 24 * s, cx + 30 * s, cy + 42 * s), 8 * s, fill=WHITE, outline=NAVY, width=2)
         d.rectangle([cx - 30 * s, cy + 36 * s, cx + 30 * s, cy + 42 * s], fill=RED)
+    elif kind == "racket":  # ラケット2本とボール
+        racket_head(d, cx - 36 * s, cy + 40 * s, math.radians(-75), 1.0 * s, color=COURT)
+        racket_head(d, cx + 36 * s, cy + 40 * s, math.radians(-105), 1.0 * s, color=ORANGE)
+        ball(d, cx, cy + 26 * s, 12 * s)
+    elif kind == "string":  # ガットが張られていく
+        fx, fy, rx, ry = cx, cy - 6 * s, 30 * s, 40 * s
+        d.line([(cx, cy + 34 * s), (cx, cy + 56 * s)], fill=NAVY, width=int(7 * s))
+        p = (t * 0.6) % 1.4
+        for i in range(-3, 4):
+            x = fx + i * rx / 4
+            h = ry * math.sqrt(max(0, 1 - (i / 4) ** 2))
+            if (i + 3) / 7 < p:
+                d.line([(x, fy - h), (x, fy + h)], fill=(120, 120, 130), width=max(1, int(2 * s)))
+        for j in range(-4, 5):
+            y = fy + j * ry / 5
+            w = rx * math.sqrt(max(0, 1 - (j / 5) ** 2))
+            if p > 0.5 + (j + 4) / 18:
+                d.line([(fx - w, y), (fx + w, y)], fill=(120, 120, 130), width=max(1, int(2 * s)))
+        d.ellipse([fx - rx, fy - ry, fx + rx, fy + ry], outline=RED, width=int(6 * s))
+    elif kind == "talk":  # 会話のふきだし
+        rr(d, (cx - 50 * s, cy - 40 * s, cx + 14 * s, cy + 2 * s), 14 * s, fill=COURT)
+        d.polygon([(cx - 34 * s, cy), (cx - 22 * s, cy), (cx - 38 * s, cy + 16 * s)], fill=COURT)
+        rr(d, (cx - 10 * s, cy + 2 * s, cx + 50 * s, cy + 40 * s), 14 * s, fill=ORANGE)
+        d.polygon([(cx + 30 * s, cy + 38 * s), (cx + 40 * s, cy + 38 * s), (cx + 42 * s, cy + 54 * s)], fill=ORANGE)
+        for k in range(3):
+            on = int(t * 3) % 3 >= k
+            d.ellipse([cx - 36 * s + k * 15 * s, cy - 24 * s, cx - 28 * s + k * 15 * s, cy - 16 * s],
+                      fill=WHITE if on else lerpc(COURT, WHITE, 0.4))
     elif kind == "hit":
         racket_head(d, cx - 30 * s, cy + 36 * s, math.radians(-60), 1.1 * s)
         ball(d, cx + 30 * s + math.sin(t * 4) * 6 * s, cy - 26 * s, 14 * s)
@@ -350,7 +352,7 @@ def stars(d, t, seed=0, n=14, color=(255, 255, 255)):
 
 
 # ---------------------------------------------------------------- 各シーン
-def rally(d, t, at, near, far, near_s, far_s):
+def rally(d, t, at, near, far, near_s, far_s, arc=120):
     """2人のラリー。near/far はプレーヤーの足元座標。"""
     k = int(t // RALLY)
     p = (t % RALLY) / RALLY
@@ -365,7 +367,7 @@ def rally(d, t, at, near, far, near_s, far_s):
     q = p
     x = lerp(a[0], b[0], q)
     gy = lerp(a[1] + 100 * (near_s if to_far else far_s), b[1] + 100 * (far_s if to_far else near_s), q)
-    y = lerp(a[1], b[1], q) - math.sin(math.pi * q) * 120
+    y = lerp(a[1], b[1], q) - math.sin(math.pi * q) * arc
     r = lerp(near_s, far_s, q if to_far else 1 - q) * 11
     ball(d, x, y, r, shadow=(x, gy))
     player(d, near[0], near[1], near_s, shirt=(60, 120, 210), swing=sw_n, side=1)
@@ -378,22 +380,76 @@ def scene_open(img, d, S, t):
     rally(d, t, at, near=(470, 610), far=(780, 350), near_s=1.45, far_s=0.75)
     p = ease_back(t / 0.9)
     y = lerp(-120, 150, p)
-    rr(d, (640 - 430, y - 85, 640 + 430, y + 85), 40, fill=(255, 255, 255, 225))
-    text(d, (640, y - 22), CHANNEL_NAME, 76, fill=GREEN, anchor="mm", stroke=4, stroke_fill=WHITE)
+    rr(d, (640 - 430, y - 95, 640 + 430, y + 95), 40, fill=(255, 255, 255, 230))
     q = ease_out((t - 0.6) / 0.6)
     if q > 0:
-        text(d, (640, y + 46), CATCH, 34, fill=lerpc(WHITE, NAVY, q), anchor="mm")
-    ball(d, 640 - 380, y - 22, 26)
-    ball(d, 640 + 380, y - 22, 26)
+        text(d, (640, y - 58), CATCH, 30, fill=lerpc(WHITE, NAVY, q), anchor="mm")
+    text(d, (640, y + 4), SHOP_NAME, 80, fill=GREEN, anchor="mm", stroke=4, stroke_fill=WHITE)
+    if q > 0:
+        text(d, (640, y + 64), SHOP_KANA, 28, fill=lerpc(WHITE, ORANGE, q), anchor="mm")
+    ball(d, 640 - 370, y + 4, 26)
+    ball(d, 640 + 370, y + 4, 26)
 
 
-def scene_content(img, d, S, t, sc):
+def scene_shop(img, d, S, t, sc):
+    """店内：大きなテレビでプロの試合、コーヒーでくつろぐ。"""
+    img.paste(gradient((250, 238, 220), (232, 212, 185)))
+    d.rectangle([0, 520, W, H], fill=(190, 150, 110))
+    for x in range(0, W, 80):
+        d.line([(x, 520), (x - 60, H)], fill=(175, 135, 98), width=2)
+    channel_badge(d)
+    text(d, (390, 115), sc["title"], 46, fill=(150, 80, 30), anchor="mm", stroke=3, stroke_fill=WHITE)
+    # 大画面テレビ
+    tx, ty, tw, th = 80, 160, 620, 340
+    rr(d, (tx - 14, ty - 14, tx + tw + 14, ty + th + 14), 16, fill=(30, 32, 38))
+    tv = gradient((90, 170, 230), (190, 225, 250)).crop((0, 0, tw, th)).copy()
+    dt = ImageDraw.Draw(tv, "RGBA")
+    at = court(dt, 70, 380, tw / 2, 240, 900)
+    rally(dt, t, at, near=(tw / 2 - 90, 300), far=(tw / 2 + 70, 100), near_s=0.9, far_s=0.5, arc=60)
+    rr(dt, (14, 14, 150, 44), 8, fill=(20, 30, 50, 210))
+    text(dt, (82, 29), "LIVE  6-4  3-2", 16, fill=WHITE, anchor="mm")
+    img.paste(tv, (tx, ty))
+    d.rectangle([tx + tw / 2 - 30, ty + th + 14, tx + tw / 2 + 30, ty + th + 34], fill=(50, 52, 60))
+    # テーブルとコーヒー
+    rr(d, (150, 560, 640, 590), 10, fill=(120, 80, 50))
+    d.rectangle([200, 590, 220, 680], fill=(100, 66, 40))
+    d.rectangle([570, 590, 590, 680], fill=(100, 66, 40))
+    for k, cx in enumerate((300, 470)):
+        d.ellipse([cx - 40, 548, cx + 40, 566], fill=WHITE, outline=(200, 190, 180))
+        rr(d, (cx - 26, 500, cx + 26, 558), 10, fill=WHITE, outline=(200, 190, 180), width=2)
+        d.arc([cx + 16, 512, cx + 44, 542], -90, 90, fill=WHITE, width=7)
+        d.ellipse([cx - 22, 498, cx + 22, 510], fill=(110, 70, 40))
+        for j in range(2):
+            ph = t * 2 + j * 1.3 + k
+            pts = [(cx - 8 + j * 14 + math.sin(ph + i * 0.7) * 6, 490 - i * 10) for i in range(5)]
+            d.line(pts, fill=(255, 255, 255, int(120 + 60 * math.sin(ph))), width=4, joint="curve")
+    # ポイント
+    for k, ln in enumerate(sc["lines"]):
+        st = S.since(k)
+        if st < 0:
+            continue
+        p = ease_back(st / 0.45)
+        x = 770 + (1 - p) * 60
+        y = 170 + k * 110
+        active = S.current() == k
+        rr(d, (x, y, x + 460, y + 86), 43, fill=WHITE, outline=ORANGE if active else (230, 205, 170), width=4)
+        check_mark(d, x + 46, y + 43, 26, GREEN)
+        for i, l in enumerate(wrap(ln["b"], 30, 360)):
+            text(d, (x + 90, y + 43), l, 30, fill=TEXT, anchor="lm")
+    # 壁のラケット
+    for k, (cx, col) in enumerate(((830, RED), (930, COURT), (1030, ORANGE), (1130, GREEN))):
+        d.ellipse([cx - 4, 400, cx + 4, 408], fill=(120, 120, 120))
+        racket_head(d, cx, 520, math.radians(-90), 1.25, color=col)
+
+
+def scene_cards(img, d, S, t, sc):
     img.paste(gradient((235, 248, 240), (205, 235, 215)))
     channel_badge(d)
     text(d, (640, 125), sc["title"], 50, fill=DGREEN, anchor="mm", stroke=3, stroke_fill=WHITE)
-    kinds = ["basic", "form", "match", "home"]
-    cw, ch, gap = 270, 330, 24
-    x0 = (W - (4 * cw + 3 * gap)) / 2
+    kinds = sc["icons"]
+    n = len(kinds)
+    cw, ch, gap = 330, 330, 40
+    x0 = (W - (n * cw + (n - 1) * gap)) / 2
     for k, ln in enumerate(sc["lines"]):
         st = S.since(k)
         if st < 0:
@@ -410,33 +466,6 @@ def scene_content(img, d, S, t, sc):
         icon(d, kinds[k], x + cw / 2, y + 145, 1.4, t)
         for i, l in enumerate(wrap(ln["b"], 30, cw - 30)):
             text(d, (x + cw / 2, y + 250 + i * 40), l, 30, fill=TEXT, anchor="mm")
-
-
-def scene_subscribe(img, d, S, t):
-    img.paste(gradient((40, 50, 70), (20, 28, 45)))
-    stars(d, t, 3)
-    text(d, (640, 160), "チャンネル登録で", 46, fill=WHITE, anchor="mm")
-    text(d, (640, 225), "新しい動画をチェック！", 58, fill=YELLOW, anchor="mm", stroke=3, stroke_fill=NAVY)
-    # 枠
-    rr(d, (300, 300, 980, 520), 30, fill=WHITE)
-    d.ellipse([340, 350, 460, 470], fill=GREEN)
-    ball(d, 400, 410, 38)
-    text(d, (490, 380), CHANNEL_NAME, 40, fill=NAVY, anchor="lm")
-    text(d, (490, 430), "テニスのコツを楽しく発信中", 24, fill=GRAY, anchor="lm")
-    click = 1.4
-    done = t >= click
-    pulse = 1 + 0.05 * math.sin(t * 8) if not done else 1.0
-    subscribe_button(d, 640, 580, pulse, done=done)
-    bell(d, 870, 580, 1.0, ring=(t - click - 0.2) if done else 0.0)
-    # カーソル
-    p = ease_out(t / click)
-    cx, cy = lerp(1100, 660, p), lerp(700, 590, p)
-    press = clamp(1 - abs(t - click) * 6)
-    cursor(d, cx, cy, 1.2, press)
-    if done:
-        q = clamp((t - click) / 0.5)
-        r = 30 + q * 120
-        d.ellipse([660 - r, 590 - r, 660 + r, 590 + r], outline=(255, 255, 255, int(200 * (1 - q))), width=4)
 
 
 def burst(img, t, c1, c2, cx=640, cy=330):
@@ -470,7 +499,7 @@ def scene_recruit(img, d, S, t):
     p = ease_back(s1 / 0.6)
     rr(d, (640 - 520 * p, 150, 640 + 520 * p, 470), 40, fill=WHITE, outline=ORANGE, width=8)
     if p > 0.6:
-        text(d, (640, 225), SCHOOL_NAME, 64, fill=GREEN, anchor="mm")
+        text(d, (640, 225), f"{SHOP_NAME} テニススクール", 56, fill=GREEN, anchor="mm")
         text(d, (640, 340), "生徒募集中！", 120, fill=RED, anchor="mm", stroke=5, stroke_fill=WHITE)
     s2 = S.since(2)
     if s2 >= 0:
@@ -480,7 +509,7 @@ def scene_recruit(img, d, S, t):
         bw = 360 * q
         rr(d, (640 - bw, y - 50, 640 + bw, y + 50), 50, fill=GREEN, outline=WHITE, width=5)
         if q > 0.7:
-            text(d, (640, y + wobble), "体験レッスン 受付中！", 52, fill=WHITE, anchor="mm")
+            text(d, (640, y + wobble), "見学・体験 お気軽に！", 52, fill=WHITE, anchor="mm")
 
 
 def coach_scene(d, t, x0, y0):
@@ -566,27 +595,26 @@ def scene_flow(img, d, S, t, sc):
 def scene_cta(img, d, S, t):
     img.paste(gradient((60, 160, 100), (30, 110, 70)))
     stars(d, t, 7, n=10)
-    at = court(d, 420, 760, 640, 700, 1700)
-    rally(d, t + 0.3, at, near=(380, 630), far=(820, 440), near_s=1.25, far_s=0.7)
+    at = court(d, 470, 780, 640, 700, 1700)
+    rally(d, t + 0.3, at, near=(330, 650), far=(960, 520), near_s=1.1, far_s=0.6, arc=90)
     p = ease_back(t / 0.7)
-    text(d, (640, 110), "一緒にテニスを", int(56 * p) + 1, fill=WHITE, anchor="mm", stroke=4, stroke_fill=DGREEN)
-    text(d, (640, 185), "楽しみましょう！", int(76 * p) + 1, fill=YELLOW, anchor="mm", stroke=5, stroke_fill=DGREEN)
+    text(d, (640, 70), "テニスのことなら", int(44 * p) + 1, fill=WHITE, anchor="mm", stroke=3, stroke_fill=DGREEN)
+    text(d, (640, 145), SHOP_NAME, int(84 * p) + 1, fill=YELLOW, anchor="mm", stroke=5, stroke_fill=DGREEN)
     s1 = S.since(1)
     if s1 >= 0:
         q = ease_back(s1 / 0.5)
-        pulse = 1 + 0.03 * math.sin(t * 7)
-        bw, bh = 560 * q * pulse, 92 * q * pulse
-        rr(d, (640 - bw / 2, 295 - bh / 2, 640 + bw / 2, 295 + bh / 2), 46, fill=RED, outline=WHITE, width=5)
-        if q > 0.7:
-            text(d, (640, 283), "体験レッスン 受付中", 40, fill=WHITE, anchor="mm")
-            text(d, (640, 321), "お申し込みは概要欄のリンクから", 22, fill=WHITE, anchor="mm")
-            ay = 367 + abs(math.sin(t * 4)) * 10
-            d.polygon([(620, ay), (660, ay), (640, ay + 22)], fill=YELLOW)
-    s2 = S.since(2)
-    if s2 >= 0:
-        q = ease_back(s2 / 0.5)
-        subscribe_button(d, 1040, 420, 0.8 * q + 0.01)
-        bell(d, 1205, 420, 0.8 * q + 0.01, ring=s2)
+        bw, bh = 760 * q, 230 * q
+        rr(d, (640 - bw / 2, 330 - bh / 2, 640 + bw / 2, 330 + bh / 2), 30, fill=(255, 255, 255, 240),
+           outline=ORANGE, width=5)
+        if q > 0.8:
+            rr(d, (300, 228, 980, 276), 24, fill=RED)
+            text(d, (640, 252), "テニススクール 生徒募集中！", 32, fill=WHITE, anchor="mm")
+            text(d, (640, 306), ADDRESS, 30, fill=TEXT, anchor="mm")
+            text(d, (640, 350), f"TEL {TEL}", 34, fill=NAVY, anchor="mm")
+            pulse = 1 + 0.03 * math.sin(t * 7)
+            lw, lh = 560 * pulse, 46 * pulse
+            rr(d, (640 - lw / 2, 400 - lh / 2, 640 + lw / 2, 400 + lh / 2), lh / 2, fill=(6, 199, 85))
+            text(d, (640, 400), "ご来店・お問い合わせは事前にLINEで", 26, fill=WHITE, anchor="mm")
 
 
 def draw_subtitle(img, d, S, sc):
@@ -610,10 +638,10 @@ def render_frame(sc, S, t, gt, total):
     key = sc["key"]
     if key == "open":
         scene_open(img, d, S, t)
-    elif key == "content":
-        scene_content(img, d, S, t, sc)
-    elif key == "subscribe":
-        scene_subscribe(img, d, S, t)
+    elif key == "shop":
+        scene_shop(img, d, S, t, sc)
+    elif key == "items":
+        scene_cards(img, d, S, t, sc)
     elif key == "recruit":
         scene_recruit(img, d, S, t)
     elif key == "easy":
@@ -751,7 +779,7 @@ def build_timeline():
     for si, sc in enumerate(SCENES):
         start = cur
         key = sc["key"]
-        lead = {"open": 1.4, "recruit": 0.6, "subscribe": 0.6}.get(key, LEAD)
+        lead = {"open": 1.4, "recruit": 0.6}.get(key, LEAD)
         if key == "recruit":
             sfx_parts.append((start + 0.05, sfx_fanfare()))
         elif key != "open":
@@ -771,9 +799,6 @@ def build_timeline():
             if "b" in ln or key in ("recruit", "cta") and li > 0:
                 sfx_parts.append((pos, sfx_pop()))
             pos += len(x) / SR + GAP
-        if key == "subscribe":
-            pos = max(pos, start + 3.2)
-            sfx_parts.append((start + 1.4, sfx_pop() * 1.5))
         end = pos + (2.2 if si == len(SCENES) - 1 else TAIL)
         if key in ("open", "cta"):
             off = 0.0 if key == "open" else 0.3
